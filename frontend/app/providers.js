@@ -24,18 +24,17 @@ const config = projectId
 
 const queryClient = new QueryClient();
 
+const rainbowTheme = darkTheme({
+  accentColor: "#8b5cf6",
+  accentColorForeground: "white",
+  borderRadius: "medium",
+});
+
 export function Providers({ children }) {
   return (
     <QueryClientProvider client={queryClient}>
       <WagmiProvider config={config}>
-        <RainbowKitProvider
-          initialChain={sepolia}
-          theme={darkTheme({
-            accentColor: "#8b5cf6",
-            accentColorForeground: "white",
-            borderRadius: "medium",
-          })}
-        >
+        <RainbowKitProvider initialChain={sepolia} theme={rainbowTheme}>
           {children}
         </RainbowKitProvider>
       </WagmiProvider>

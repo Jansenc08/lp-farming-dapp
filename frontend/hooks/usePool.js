@@ -30,7 +30,7 @@ export function usePool(pid, lpAddress) {
     abi: MASTERCHEF_ABI,
     functionName: "pendingReward",
     args: address && hasAddress ? [BigInt(pid), address] : undefined,
-    query: { refetchInterval: PENDING_REFETCH_MS },
+    query: { refetchInterval: address && hasAddress ? PENDING_REFETCH_MS : false },
   });
 
   const lpBalance = useReadContract({
