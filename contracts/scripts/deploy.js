@@ -3,6 +3,7 @@ const hre = require("hardhat");
 const REWARD_PER_BLOCK = hre.ethers.parseEther("200");
 const TEST_ADDRESS = "0x34846BF00C64A56A5FB10a9EE7717aBC7887FEdf";
 const LP_SEND_AMOUNT = hre.ethers.parseEther("1000");
+const STK_SEND_AMOUNT = hre.ethers.parseEther("1000");
 
 const LP_TOKENS = [
   { name: "LP Token 1", symbol: "LP1" },
@@ -61,6 +62,43 @@ async function main() {
     console.log(`Sent 1000 ${LP_TOKENS[i].symbol} to ${TEST_ADDRESS}`);
   }
 
+  // --- Bonus: Staking + Vault ---
+  const StakingToken = await hre.ethers.getContractFactory("StakingToken");
+  const stakingToken = await StakingToken.deploy();
+  await stakingToken.waitForDeployment();
+  const stakingTokenAddress = await stakingToken.getAddress();
+  console.log("StakingToken (STK) deployed to:", stakingTokenAddress);
+
+  await stakingToken.transfer(TEST_ADDRESS, STK_SEND_AMOUNT);
+  console.log("Sent 1000 STK to", TEST_ADDRESS);
+
+  const StakingContract = await hre.ethers.getContractFactory("StakingContract");
+  const stakingContract = await StakingContract.deploy(stakingTokenAddress);
+  await stakingContract.waitForDeployment();
+  const stakingContractAddress = await stakingContract.getAddress();
+  console.log("StakingContract deployed to:", stakingContractAddress);
+
+  await stakingToken.transferOwnership(stakingContractAddress);
+  console.log("StakingToken ownership transferred to StakingContract");
+
+  const VaultToken = await hre.ethers.getContractFactory("VaultToken");
+  const vaultToken = await VaultToken.deploy();
+  await vaultToken.waitForDeployment();
+  const vaultTokenAddress = await vaultToken.getAddress();
+  console.log("VaultToken (vSTK) deployed to:", vaultTokenAddress);
+
+  const AutoCompoundVault = await hre.ethers.getContractFactory("AutoCompoundVault");
+  const autoCompoundVault = await AutoCompoundVault.deploy(stakingContractAddress, vaultTokenAddress);
+  await autoCompoundVault.waitForDeployment();
+  const autoCompoundVaultAddress = await autoCompoundVault.getAddress();
+  console.log("AutoCompoundVault deployed to:", autoCompoundVaultAddress);
+
+  await vaultToken.transferOwnership(autoCompoundVaultAddress);
+  console.log("VaultToken ownership transferred to AutoCompoundVault");
+
+  await stakingContract.transferOwnership(autoCompoundVaultAddress);
+  console.log("StakingContract ownership transferred to AutoCompoundVault");
+
   // --- Print all contract addresses ---
   console.log("\n========== DEPLOYMENT SUMMARY ==========");
   console.log("RewardToken (FRT):     ", rewardTokenAddress);
@@ -68,7 +106,11 @@ async function main() {
   console.log("LP Token 1 (LP1):      ", lpAddresses[0]);
   console.log("LP Token 2 (LP2):      ", lpAddresses[1]);
   console.log("LP Token 3 (LP3):      ", lpAddresses[2]);
-  console.log("Test address received 1000 of each LP:", TEST_ADDRESS);
+  console.log("StakingToken (STK):    ", stakingTokenAddress);
+  console.log("StakingContract:       ", stakingContractAddress);
+  console.log("VaultToken (vSTK):     ", vaultTokenAddress);
+  console.log("AutoCompoundVault:     ", autoCompoundVaultAddress);
+  console.log("Test address received 1000 of each LP + 1000 STK:", TEST_ADDRESS);
   console.log("=========================================\n");
 
   // 8. Verify on Etherscan (wait for indexer)
@@ -98,6 +140,10 @@ async function main() {
     await verify(lpAddresses[0], [LP_TOKENS[0].name, LP_TOKENS[0].symbol], "contracts/MockLPToken.sol:MockLPToken");
     await verify(lpAddresses[1], [LP_TOKENS[1].name, LP_TOKENS[1].symbol], "contracts/MockLPToken.sol:MockLPToken");
     await verify(lpAddresses[2], [LP_TOKENS[2].name, LP_TOKENS[2].symbol], "contracts/MockLPToken.sol:MockLPToken");
+    await verify(stakingTokenAddress, [], "contracts/StakingToken.sol:StakingToken");
+    await verify(stakingContractAddress, [stakingTokenAddress], "contracts/StakingContract.sol:StakingContract");
+    await verify(vaultTokenAddress, [], "contracts/VaultToken.sol:VaultToken");
+    await verify(autoCompoundVaultAddress, [stakingContractAddress, vaultTokenAddress], "contracts/AutoCompoundVault.sol:AutoCompoundVault");
   }
 }
 
