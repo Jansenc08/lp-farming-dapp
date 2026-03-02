@@ -1,36 +1,33 @@
 "use client";
 
 import { useAccount, useReadContract } from "wagmi";
-import { CONTRACT, MASTERCHEF_ABI, ERC20_ABI } from "@/constants";
-
-const MASTERCHEF = CONTRACT.MASTERCHEF;
-const PENDING_REFETCH_MS = 15_000;
+import { CONTRACT, MASTERCHEF_ABI, ERC20_ABI, REFETCH_INTERVAL_MS } from "@/constants";
 
 /** Pool + user stats for one pool. Pending rewards refetch every 15s. */
 export function usePool(pid, lpAddress) {
   const { address } = useAccount();
-  const hasAddress = !!MASTERCHEF && !!lpAddress;
+  const hasAddress = !!CONTRACT.MASTERCHEF && !!lpAddress;
 
   const poolInfo = useReadContract({
-    address: MASTERCHEF,
+    address: CONTRACT.MASTERCHEF,
     abi: MASTERCHEF_ABI,
     functionName: "poolInfo",
     args: [BigInt(pid)],
   });
 
   const userInfo = useReadContract({
-    address: MASTERCHEF,
+    address: CONTRACT.MASTERCHEF,
     abi: MASTERCHEF_ABI,
     functionName: "userInfo",
     args: address && hasAddress ? [BigInt(pid), address] : undefined,
   });
 
   const pendingReward = useReadContract({
-    address: MASTERCHEF,
+    address: CONTRACT.MASTERCHEF,
     abi: MASTERCHEF_ABI,
     functionName: "pendingReward",
     args: address && hasAddress ? [BigInt(pid), address] : undefined,
-    query: { refetchInterval: address && hasAddress ? PENDING_REFETCH_MS : false },
+    query: { refetchInterval: address && hasAddress ? REFETCH_INTERVAL_MS : false },
   });
 
   const lpBalance = useReadContract({
@@ -44,7 +41,7 @@ export function usePool(pid, lpAddress) {
     address: lpAddress,
     abi: ERC20_ABI,
     functionName: "allowance",
-    args: address && MASTERCHEF && lpAddress ? [address, MASTERCHEF] : undefined,
+    args: address && CONTRACT.MASTERCHEF && lpAddress ? [address, CONTRACT.MASTERCHEF] : undefined,
   });
 
   const refetch = () =>

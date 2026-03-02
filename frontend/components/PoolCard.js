@@ -1,31 +1,16 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { parseEther } from "viem";
 import { useAccount } from "wagmi";
 import toast from "react-hot-toast";
 import { usePool } from "@/hooks/usePool";
 import { useApprove } from "@/hooks/useApprove";
 import { useFarm } from "@/hooks/useFarm";
 import { usePendingPool } from "@/app/PendingPoolContext";
-import { formatTokenAmount } from "@/utils/format";
-
-const INPUT_CLASS =
-  "w-full rounded-xl border border-white/10 bg-slate-900/80 px-3 py-2 text-white placeholder-slate-500 focus:border-violet-500/50 focus:outline-none focus:ring-1 focus:ring-violet-500/50 disabled:opacity-60 read-only:cursor-not-allowed read-only:opacity-90";
-
-function parseAmount(str) {
-  if (!str || str === "0") return 0n;
-  try {
-    return parseEther(str);
-  } catch {
-    return 0n;
-  }
-}
-
-function txMessage(action, success) {
-  const verb = action === "deposit" ? "Deposit" : action === "withdraw" ? "Withdraw" : "Claim";
-  return `${verb} Transaction ${success ? "successful" : "unsuccessful"}`;
-}
+import { formatTokenAmount, parseAmount, formatTxResultMessage } from "@/utils/format";
+import { INPUT_CLASS } from "@/constants";
+import { Spinner } from "@/components/Spinner";
+import { CardLoading } from "@/components/CardLoading";
 
 export function PoolCard({ pool }) {
   const { pid, name, symbol, lpAddress, allocationPercent } = pool;
@@ -54,7 +39,7 @@ export function PoolCard({ pool }) {
   // Tx confirmed → success toast, clear fields, refetch
   useEffect(() => {
     if (!isConfirmed || !hash || !lastActionId) return;
-    toast.success(txMessage(lastActionId, true), { id: lastActionId });
+    toast.success(formatTxResultMessage(lastActionId, true), { id: lastActionId });
     refetch();
     if (lastActionId === "deposit") setDepositAmount("");
     if (lastActionId === "withdraw") setWithdrawAmount("");
@@ -66,7 +51,7 @@ export function PoolCard({ pool }) {
   useEffect(() => {
     if (!writeError) return;
     if (lastActionId) toast.dismiss(lastActionId);
-    toast.error(txMessage(lastActionId, false));
+    toast.error(formatTxResultMessage(lastActionId, false));
     setPendingPoolId(null);
     setLastActionId(null);
     handleTxError();
@@ -80,14 +65,29 @@ export function PoolCard({ pool }) {
   const disabled = !isConnected || thisCardPending || isApprovePending;
   const inputsLocked = isFarmPending || needsApproval;
 
+  const depositLabel =
+    depositAmountWei > 0n && lpBalance != null && depositAmountWei > lpBalance ? "Insufficient Balance" : "Deposit";
+  const depositButtonDisabled =
+    disabled || needsApproval || depositAmountWei <= 0n || (lpBalance != null && depositAmountWei > lpBalance);
+  const depositButtonGrey = depositLabel === "Insufficient Balance";
+
+  const withdrawLabel =
+    withdrawAmountWei > 0n && depositedWei != null && withdrawAmountWei > depositedWei ? "Insufficient Balance" : "Withdraw";
+  const withdrawButtonDisabled =
+    disabled || withdrawAmountWei <= 0n || (depositedWei != null && withdrawAmountWei > depositedWei);
+  const withdrawButtonGrey = withdrawLabel === "Insufficient Balance";
+
+  const claimLabel = hasPendingReward ? "Claim rewards" : "No Rewards";
+  const claimButtonDisabled = !canClaim || isFarmPending;
+
   const handleDeposit = () => {
     if (canDeposit) {
       setLastActionId("deposit");
       setPendingPoolId(pid);
       deposit(depositAmountWei);
-    } else if (depositAmountWei > 0n && lpBalance != null && lpBalance < depositAmountWei) toast.error("Insufficient balance");
-    else if (depositAmountWei > 0n && needsApproval) toast.error("Approve first");
-    else if (depositAmountWei <= 0n) toast.error("Enter amount to deposit");
+    } else if (depositAmountWei > 0n && lpBalance != null && lpBalance < depositAmountWei) toast.error("Insufficient balance.");
+    else if (depositAmountWei > 0n && needsApproval) toast.error("Please approve first.");
+    else if (depositAmountWei <= 0n) toast.error("Please enter an amount to deposit.");
   };
 
   const handleWithdraw = () => {
@@ -95,8 +95,8 @@ export function PoolCard({ pool }) {
       setLastActionId("withdraw");
       setPendingPoolId(pid);
       withdraw(withdrawAmountWei);
-    } else if (withdrawAmountWei > 0n && depositedWei < withdrawAmountWei) toast.error("Insufficient deposited amount");
-    else if (withdrawAmountWei <= 0n) toast.error("Enter amount to withdraw");
+    }     else if (withdrawAmountWei > 0n && depositedWei < withdrawAmountWei) toast.error("Insufficient deposited amount.");
+    else if (withdrawAmountWei <= 0n) toast.error("Please enter an amount to withdraw.");
   };
 
   const handleClaim = () => {
@@ -104,10 +104,8 @@ export function PoolCard({ pool }) {
       setLastActionId("claim");
       setPendingPoolId(pid);
       claim();
-    } else if (!hasPendingReward) toast.error("No rewards to claim");
+    } else if (!hasPendingReward) toast.error("No rewards to claim.");
   };
-
-  const spinnerBase = "h-4 w-4 animate-spin rounded-full border-2 border-t-transparent";
 
   return (
     <div className="rounded-2xl border border-white/10 bg-slate-800/40 p-5 shadow-xl backdrop-blur transition hover:border-violet-500/30 hover:bg-slate-800/60 sm:p-6">
@@ -121,9 +119,7 @@ export function PoolCard({ pool }) {
       </div>
 
       {poolLoading ? (
-        <div className="flex h-32 items-center justify-center text-slate-400">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-violet-500 border-t-transparent" />
-        </div>
+        <CardLoading />
       ) : (
         <>
           <div className="mb-4 grid gap-2 text-sm">
@@ -145,7 +141,7 @@ export function PoolCard({ pool }) {
             <button type="button" disabled={disabled} onClick={() => approve()} className="mb-3 w-full cursor-pointer rounded-xl bg-amber-500/20 py-2.5 font-medium text-amber-400 transition hover:bg-amber-500/30 disabled:cursor-not-allowed disabled:opacity-50">
               {isApprovePending ? (
                 <span className="inline-flex items-center gap-2">
-                  <span className={`${spinnerBase} border-amber-400`} />
+                  <Spinner className="h-4 w-4 border-amber-400" />
                   Approving...
                 </span>
               ) : (
@@ -171,11 +167,11 @@ export function PoolCard({ pool }) {
                 />
                 <button
                   type="button"
-                  disabled={disabled || needsApproval}
+                  disabled={depositButtonDisabled}
                   onClick={handleDeposit}
-                  className="shrink-0 cursor-pointer rounded-xl bg-gradient-to-r from-violet-600 to-blue-600 px-4 py-2 font-medium text-white transition hover:from-violet-500 hover:to-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
+                  className={`shrink-0 cursor-pointer rounded-xl px-4 py-2 font-medium transition disabled:cursor-not-allowed disabled:opacity-50 ${depositButtonGrey ? "bg-slate-600 text-slate-400" : "bg-gradient-to-r from-violet-600 to-blue-600 text-white hover:from-violet-500 hover:to-blue-500"}`}
                 >
-                  {isFarmPending ? <span className="inline-flex items-center gap-1"><span className={`${spinnerBase} border-white`} />...</span> : "Deposit"}
+                  {isFarmPending ? <span className="inline-flex items-center gap-1"><Spinner className="h-4 w-4 border-white" />...</span> : depositLabel}
                 </button>
               </div>
             </div>
@@ -196,22 +192,22 @@ export function PoolCard({ pool }) {
                 />
                 <button
                   type="button"
-                  disabled={disabled || needsApproval}
+                  disabled={withdrawButtonDisabled}
                   onClick={handleWithdraw}
-                  className="shrink-0 cursor-pointer rounded-xl border border-white/20 bg-slate-800 px-4 py-2 font-medium text-white transition hover:border-violet-500/50 hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
+                  className={`shrink-0 cursor-pointer rounded-xl px-4 py-2 font-medium transition disabled:cursor-not-allowed disabled:opacity-50 ${withdrawButtonGrey ? "bg-slate-600 text-slate-400" : "border border-white/20 bg-slate-800 text-white hover:border-violet-500/50 hover:bg-slate-700"}`}
                 >
-                  {isFarmPending ? <span className="inline-flex items-center gap-1"><span className={`${spinnerBase} border-white`} />...</span> : "Withdraw"}
+                  {isFarmPending ? <span className="inline-flex items-center gap-1"><Spinner className="h-4 w-4 border-white" />...</span> : withdrawLabel}
                 </button>
               </div>
             </div>
 
             <button
               type="button"
-              disabled={!canClaim || isFarmPending}
+              disabled={claimButtonDisabled}
               onClick={handleClaim}
-              className={`w-full cursor-pointer rounded-xl py-2.5 font-medium transition disabled:cursor-not-allowed disabled:opacity-50 ${hasPendingReward ? "bg-gradient-to-r from-violet-600 to-blue-600 text-white shadow-lg shadow-violet-500/25 hover:from-violet-500 hover:to-blue-500" : "bg-violet-500/20 text-violet-300 hover:bg-violet-500/30"}`}
+              className={`w-full cursor-pointer rounded-xl py-2.5 font-medium transition disabled:cursor-not-allowed disabled:opacity-50 ${hasPendingReward ? "bg-gradient-to-r from-violet-600 to-blue-600 text-white shadow-lg shadow-violet-500/25 hover:from-violet-500 hover:to-blue-500" : "bg-slate-600 text-slate-400"}`}
             >
-              {isFarmPending ? <span className="inline-flex items-center gap-2"><span className={`${spinnerBase} border-violet-400`} />...</span> : "Claim rewards"}
+              {isFarmPending ? <span className="inline-flex items-center gap-2"><Spinner className="h-4 w-4 border-violet-400" />...</span> : claimLabel}
             </button>
           </div>
         </>

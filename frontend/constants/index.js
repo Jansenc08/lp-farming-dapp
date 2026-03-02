@@ -1,12 +1,29 @@
 // Addresses from env — no hardcoded addresses
 const CHAIN_ID = parseInt(process.env.NEXT_PUBLIC_CHAIN_ID || "11155111", 10);
 
+export const MAX_UINT256 = 2n ** 256n - 1n;
+export const REFETCH_INTERVAL_MS = 15_000;
+
+export const INPUT_CLASS =
+  "w-full rounded-xl border border-white/10 bg-slate-900/80 px-3 py-2 text-white placeholder-slate-500 focus:border-violet-500/50 focus:outline-none focus:ring-1 focus:ring-violet-500/50 disabled:opacity-60 read-only:cursor-not-allowed read-only:opacity-90";
+
+export const VAULT_TOAST_IDS = {
+  deposit: "vault-deposit",
+  withdraw: "vault-withdraw",
+  compound: "vault-compound",
+  approve: "vault-approve",
+};
+
 export const CONTRACT = {
   MASTERCHEF: process.env.NEXT_PUBLIC_MASTERCHEF_ADDRESS,
   REWARD_TOKEN: process.env.NEXT_PUBLIC_REWARD_TOKEN_ADDRESS,
   LP1: process.env.NEXT_PUBLIC_LP1_ADDRESS,
   LP2: process.env.NEXT_PUBLIC_LP2_ADDRESS,
   LP3: process.env.NEXT_PUBLIC_LP3_ADDRESS,
+  STAKING_TOKEN: process.env.NEXT_PUBLIC_STAKING_TOKEN_ADDRESS,
+  STAKING_CONTRACT: process.env.NEXT_PUBLIC_STAKING_CONTRACT_ADDRESS,
+  VAULT_TOKEN: process.env.NEXT_PUBLIC_VAULT_TOKEN_ADDRESS,
+  AUTO_COMPOUND_VAULT: process.env.NEXT_PUBLIC_AUTO_COMPOUND_VAULT_ADDRESS,
 };
 
 export const CHAIN_ID_SEPOLIA = 11155111;
@@ -38,4 +55,13 @@ export const MASTERCHEF_ABI = [
   { inputs: [{ name: "", type: "uint256" }], name: "poolInfo", outputs: [{ name: "lpToken", type: "address" }, { name: "allocPoint", type: "uint256" }, { name: "lastRewardBlock", type: "uint256" }, { name: "accRewardPerShare", type: "uint256" }], stateMutability: "view", type: "function" },
   { inputs: [], name: "rewardPerBlock", outputs: [{ name: "", type: "uint256" }], stateMutability: "view", type: "function" },
   { inputs: [], name: "poolLength", outputs: [{ name: "", type: "uint256" }], stateMutability: "view", type: "function" },
+];
+
+// AutoCompoundVault: deposit, withdraw, compound, getPricePerShare, pendingReward
+export const VAULT_ABI = [
+  { inputs: [{ name: "_amount", type: "uint256" }], name: "deposit", outputs: [], stateMutability: "nonpayable", type: "function" },
+  { inputs: [{ name: "_shares", type: "uint256" }], name: "withdraw", outputs: [], stateMutability: "nonpayable", type: "function" },
+  { inputs: [], name: "compound", outputs: [], stateMutability: "nonpayable", type: "function" },
+  { inputs: [], name: "getPricePerShare", outputs: [{ name: "", type: "uint256" }], stateMutability: "view", type: "function" },
+  { inputs: [], name: "pendingReward", outputs: [{ name: "", type: "uint256" }], stateMutability: "view", type: "function" },
 ];

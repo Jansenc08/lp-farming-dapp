@@ -1,4 +1,4 @@
-import { formatUnits } from "viem";
+import { formatUnits, parseEther } from "viem";
 
 const DEFAULT_DECIMALS = 18;
 
@@ -18,4 +18,20 @@ export function formatAddress(address) {
   if (!address || typeof address !== "string") return "";
   if (address.length < 12) return address;
   return `${address.slice(0, 6)}...${address.slice(-4)}`;
+}
+
+/** Parse user input string to wei (18 decimals). Returns 0n on invalid or empty. */
+export function parseAmount(str) {
+  if (!str || str === "0") return 0n;
+  try {
+    return parseEther(str);
+  } catch {
+    return 0n;
+  }
+}
+
+/** User-facing transaction result message for pool actions. */
+export function formatTxResultMessage(action, success) {
+  const verb = action === "deposit" ? "Deposit" : action === "withdraw" ? "Withdraw" : "Claim";
+  return `${verb} Transaction ${success ? "successful" : "unsuccessful"}`;
 }

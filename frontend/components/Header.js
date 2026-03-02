@@ -1,21 +1,32 @@
 "use client";
 
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { useAccount, useSwitchChain } from "wagmi";
 import { formatAddress } from "@/utils/format";
 import { APP_CHAIN_ID, CHAIN_ID_SEPOLIA } from "@/constants";
 
 export function Header() {
+  const pathname = usePathname();
   const { address, isConnected, chain } = useAccount();
   const { switchChain } = useSwitchChain();
   const isWrongNetwork = isConnected && chain?.id !== APP_CHAIN_ID;
+  const linkClass = (path) =>
+    `text-sm font-medium transition ${pathname === path ? "text-violet-400" : "text-slate-400 hover:text-white"}`;
 
   return (
     <header className="sticky top-0 z-50 border-b border-white/10 bg-slate-900/80 backdrop-blur-xl">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
-        <span className="bg-gradient-to-r from-violet-500 to-blue-500 bg-clip-text text-xl font-bold text-transparent">
-          FarmX
-        </span>
+        <div className="flex items-center gap-6">
+          <Link href="/" className="bg-gradient-to-r from-violet-500 to-blue-500 bg-clip-text text-xl font-bold text-transparent">
+            FarmX
+          </Link>
+          <nav className="flex gap-4">
+            <Link href="/" className={linkClass("/")}>Farm</Link>
+            <Link href="/vault" className={linkClass("/vault")}>Vault</Link>
+          </nav>
+        </div>
 
         <div className="flex items-center gap-3">
           {isWrongNetwork && (

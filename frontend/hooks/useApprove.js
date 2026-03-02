@@ -1,10 +1,7 @@
 "use client";
 
 import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
-import { CONTRACT, ERC20_ABI } from "@/constants";
-
-const MASTERCHEF = CONTRACT.MASTERCHEF;
-const MAX_UINT256 = 2n ** 256n - 1n;
+import { CONTRACT, ERC20_ABI, MAX_UINT256 } from "@/constants";
 
 /** LP token approval for MasterChef. needsApproval when allowance < amount or allowance is zero. */
 export function useApprove(lpAddress, amountWei) {
@@ -14,7 +11,7 @@ export function useApprove(lpAddress, amountWei) {
     address: lpAddress,
     abi: ERC20_ABI,
     functionName: "allowance",
-    args: address && MASTERCHEF ? [address, MASTERCHEF] : undefined,
+    args: address && CONTRACT.MASTERCHEF ? [address, CONTRACT.MASTERCHEF] : undefined,
   });
 
   const { writeContract, data: hash, isPending: isTxPending, error: approveError, reset: resetApprove } = useWriteContract();
@@ -25,18 +22,13 @@ export function useApprove(lpAddress, amountWei) {
     (amountWei > 0n ? (allowance == null || allowance < amountWei) : allowance === 0n);
 
   const approve = () => {
-    if (!lpAddress) return;
-    try {
-      writeContract({
-        address: lpAddress,
-        abi: ERC20_ABI,
-        functionName: "approve",
-        args: [MASTERCHEF, MAX_UINT256],
-      });
-    } catch (e) {
-      console.error(e);
-      throw e;
-    }
+    if (!lpAddress || !CONTRACT.MASTERCHEF) return;
+    writeContract({
+      address: lpAddress,
+      abi: ERC20_ABI,
+      functionName: "approve",
+      args: [CONTRACT.MASTERCHEF, MAX_UINT256],
+    });
   };
 
   return {
