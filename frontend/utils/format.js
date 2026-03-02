@@ -20,11 +20,39 @@ export function formatAddress(address) {
   return `${address.slice(0, 6)}...${address.slice(-4)}`;
 }
 
-/** Parse user input string to wei (18 decimals). Returns 0n on invalid or empty. */
+/** Wei → decimal string for input fields (no commas). Use for Max button. */
+export function formatAmountForInput(value, decimals = DEFAULT_DECIMALS) {
+  if (value === undefined || value === null || value === 0n) return "";
+  return formatUnits(value, decimals);
+}
+
+/** Format a raw number string with comma separators (integer part only). Keeps decimals as-is. */
+export function formatNumberWithCommas(str) {
+  if (!str || typeof str !== "string") return "";
+  const trimmed = str.trim();
+  if (!trimmed) return "";
+  const parts = trimmed.split(".");
+  const integerPart = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  return parts.length > 1 ? `${integerPart}.${parts[1]}` : integerPart;
+}
+
+/** Sanitize user input to digits and at most one decimal point. Use for controlled amount inputs. */
+export function sanitizeAmountInput(str) {
+  if (!str || typeof str !== "string") return "";
+  const noCommas = str.replace(/,/g, "");
+  const digitsAndDot = noCommas.replace(/[^\d.]/g, "");
+  const firstDot = digitsAndDot.indexOf(".");
+  if (firstDot === -1) return digitsAndDot;
+  return digitsAndDot.slice(0, firstDot + 1) + digitsAndDot.slice(firstDot + 1).replace(/\./g, "");
+}
+
+/** Parse user input string to wei (18 decimals). Strips commas. Returns 0n on invalid or empty. */
 export function parseAmount(str) {
   if (!str || str === "0") return 0n;
+  const raw = typeof str === "string" ? str.replace(/,/g, "") : str;
+  if (!raw || raw === "0") return 0n;
   try {
-    return parseEther(str);
+    return parseEther(raw);
   } catch {
     return 0n;
   }
@@ -32,6 +60,6 @@ export function parseAmount(str) {
 
 /** User-facing transaction result message for pool actions. */
 export function formatTxResultMessage(action, success) {
-  const verb = action === "deposit" ? "Deposit" : action === "withdraw" ? "Withdraw" : "Claim";
-  return `${verb} Transaction ${success ? "successful" : "unsuccessful"}`;
+  const verb = action === "deposit" ? "Stake" : action === "withdraw" ? "Unstake" : "Claim";
+  return `${verb} transaction ${success ? "successful" : "unsuccessful"}`;
 }

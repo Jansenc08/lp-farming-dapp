@@ -20,16 +20,16 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en" className="dark">
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+    <html lang="en">
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased bg-gray-50 text-gray-900`}>
         <Providers>
           {children}
           <Toaster
             position="top-right"
             toastOptions={{
-              className: "!bg-slate-800 !text-slate-100 !border-slate-700",
+              className: "!bg-white !text-gray-900 !border !border-gray-200 !shadow-lg",
               success: { iconTheme: { primary: "#8b5cf6" } },
-              error: { iconTheme: { primary: "#f87171" } },
+              error: { iconTheme: { primary: "#ef4444" } },
             }}
           />
         </Providers>

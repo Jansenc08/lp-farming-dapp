@@ -3,7 +3,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { WagmiProvider, createConfig, http, injected } from "wagmi";
 import { sepolia } from "viem/chains";
-import { RainbowKitProvider, darkTheme, getDefaultConfig } from "@rainbow-me/rainbowkit";
+import { RainbowKitProvider, lightTheme, getDefaultConfig } from "@rainbow-me/rainbowkit";
 import "@rainbow-me/rainbowkit/styles.css";
 
 const projectId = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || "";
@@ -24,8 +24,8 @@ const config = projectId
 
 const queryClient = new QueryClient();
 
-const rainbowTheme = darkTheme({
-  accentColor: "#8b5cf6",
+const rainbowTheme = lightTheme({
+  accentColor: "#7c3aed",
   accentColorForeground: "white",
   borderRadius: "medium",
 });

@@ -5,7 +5,7 @@ export const MAX_UINT256 = 2n ** 256n - 1n;
 export const REFETCH_INTERVAL_MS = 15_000;
 
 export const INPUT_CLASS =
-  "w-full rounded-xl border border-white/10 bg-slate-900/80 px-3 py-2 text-white placeholder-slate-500 focus:border-violet-500/50 focus:outline-none focus:ring-1 focus:ring-violet-500/50 disabled:opacity-60 read-only:cursor-not-allowed read-only:opacity-90";
+  "min-w-[7rem] flex-1 w-full rounded-xl border border-gray-200 bg-gray-100 px-3 py-2.5 text-base text-gray-900 placeholder-gray-500 focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500 disabled:opacity-60 read-only:cursor-not-allowed read-only:opacity-90";
 
 export const VAULT_TOAST_IDS = {
   deposit: "vault-deposit",
